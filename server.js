@@ -5,6 +5,7 @@ const express     = require('express');
 const bodyParser  = require('body-parser');
 const cors        = require('cors');
 const mongoose    = require('mongoose');
+const helmet      = require('helmet'); // ✅ agregado
 
 const apiRoutes         = require('./routes/api.js');
 const fccTestingRoutes  = require('./routes/fcctesting.js');
@@ -17,17 +18,30 @@ const app = express();
 MONGODB CONNECTION
 =========================
 */
-
 mongoose.connect(process.env.DB)
   .then(() => console.log("Connected to MongoDB"))
   .catch(err => console.error("MongoDB connection error:", err));
 
 /*
 =========================
-MIDDLEWARE
+SECURITY (FCC)
 =========================
 */
 
+// 2) Only allow your site to be loaded in an iFrame on your own pages
+app.use(helmet.frameguard({ action: 'sameorigin' }));
+
+// 3) Do not allow DNS prefetching
+app.use(helmet.dnsPrefetchControl({ allow: false }));
+
+// 4) Only allow your site to send the referrer for your own pages
+app.use(helmet.referrerPolicy({ policy: 'same-origin' }));
+
+/*
+=========================
+MIDDLEWARE
+=========================
+*/
 app.use('/public', express.static(process.cwd() + '/public'));
 app.use(cors({ origin: '*' })); // FCC testing only
 app.use(bodyParser.json());
@@ -67,7 +81,6 @@ apiRoutes(app);
 404 HANDLER
 =========================
 */
-
 app.use(function(req, res) {
   res.status(404)
     .type('text')
@@ -79,7 +92,6 @@ app.use(function(req, res) {
 START SERVER
 =========================
 */
-
 const listener = app.listen(process.env.PORT || 3000, function () {
   console.log('Your app is listening on port ' + listener.address().port);
 
